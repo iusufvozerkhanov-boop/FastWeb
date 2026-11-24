@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить фильм — Архив Кинозала</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;500&family=Onest:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Палитра 35mm киноплёнки: тёплый уголь, бумага, латунь и красный огонёк REC */
+            --bg-darkroom: #0a0908;
+            --bg-surface: #12100e;
+            --bg-elevated: #191614;
+            --bg-input: #0d0c0b;
+
+            --ink-cream: #f0ebe1;
+            --ink-soft: #9e9689;
+            --ink-dim: #5e5850;
+
+            --accent-brass: #d4a359;
+            --accent-brass-dim: rgba(212, 163, 89, 0.14);
+            --accent-rec: #d93829;
+            --accent-rec-glow: rgba(217, 56, 41, 0.45);
+            --accent-ok: #4ea874;
+
+            --line-subtle: rgba(240, 235, 225, 0.08);
+            --line-medium: rgba(240, 235, 225, 0.16);
+            --line-strong: rgba(212, 163, 89, 0.48);
+
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Onest', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --ease-cinema: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            background-color: var(--bg-darkroom);
+            color: var(--ink-cream);
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Живой фон на Canvas (анаморфные блики и киноплёночная пыль) */
+        #darkroom-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Тонкая 35-мм зернистость поверх всей сцены */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.045;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+        }
+
+        /* Мягкое виньетирование киноэкрана */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: radial-gradient(ellipse 80% 75% at 50% 45%, transparent 35%, rgba(4, 3, 3, 0.85) 100%);
+        }
+
+        ::selection {
+            background: var(--accent-brass);
+            color: #0a0908;
+        }
+
+        /* ==========================================================================
+           ВЕРХНЯЯ ТЕХНИЧЕСКАЯ СТРОКА (ХЛОПУШКА / РЕЖИССЁРСКИЙ ПУЛЬТ)
+           ========================================================================== */
+        .slate-bar {
+            position: relative;
+            z-index: 10;
+            width: min(100% - 3rem, 1280px);
+            margin: 0 auto;
+            padding: 1.6rem 0;
+            border-bottom: 1px solid var(--line-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: color 0.25s ease, transform 0.25s var(--ease-cinema);
+        }
+
+        .back-link:hover {
+            color: var(--ink-cream);
+            transform: translateX(-4px);
+        }
+
+        .slate-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-dim);
+        }
+
+        .rec-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--ink-cream);
+        }
+
+        .rec-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-rec);
+            box-shadow: 0 0 12px var(--accent-rec-glow);
+            animation: recBlink 2.2s ease-in-out infinite;
+        }
+
+        /* ==========================================================================
+           ГЛАВНАЯ ДВУХКОЛОНОЧНАЯ СЦЕНА
+           ========================================================================== */
+        .stage {
+            position: relative;
+            z-index: 10;
+            width: min(100% - 3rem, 1280px);
+            margin: 0 auto;
+            padding: clamp(2.5rem, 5vh, 4.2rem) 0 5rem;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: clamp(2.5rem, 5vw, 5.5rem);
+            align-items: start;
+        }
+
+        /* Заголовок в духе авторских титров */
+        .headline-block {
+            margin-bottom: 2.5rem;
+        }
+
+        .headline-kicker {
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-brass);
+            margin-bottom: 0.85rem;
+            display: block;
+        }
+
+        .headline-block h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 4.6vw, 4.4rem);
+            font-weight: 500;
+            line-height: 0.98;
+            letter-spacing: -0.015em;
+            color: var(--ink-cream);
+        }
+
+        .headline-block h1 em {
+            font-style: italic;
+            font-weight: 400;
+            color: var(--accent-brass);
+        }
+
+        /* ==========================================================================
+           АРХИТЕКТУРНАЯ ФОРМА (БЕЗ ДЕШЁВЫХ КОРОБОК)
+           ========================================================================== */
+        .intake-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 0.38fr 0.62fr;
+            gap: 1.5rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            position: relative;
+        }
+
+        .field-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .field label {
+            font-family: var(--font-mono);
+            font-size: 0.73rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            transition: color 0.25s ease;
+        }
+
+        .field:focus-within label {
+            color: var(--accent-brass);
+        }
+
+        .field-num {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--ink-dim);
+        }
+
+        /* Элегантные поля ввода с тактильной границей */
+        .cinematic-input,
+        .cinematic-textarea {
+            width: 100%;
+            font-family: var(--font-sans);
+            font-size: 1.05rem;
+            font-weight: 400;
+            color: var(--ink-cream);
+            background: rgba(18, 16, 14, 0.72);
+            border: 1px solid var(--line-subtle);
+            border-bottom: 1px solid var(--line-medium);
+            border-radius: 4px;
+            padding: 1rem 1.15rem;
+            outline: none;
+            transition:
+                background 0.3s ease,
+                border-color 0.3s ease,
+                box-shadow 0.3s ease;
+        }
+
+        .cinematic-input::placeholder,
+        .cinematic-textarea::placeholder {
+            color: var(--ink-dim);
+        }
+
+        .cinematic-input:hover,
+        .cinematic-textarea:hover {
+            border-color: rgba(240, 235, 225, 0.24);
+        }
+
+        .cinematic-input:focus,
+        .cinematic-textarea:focus {
+            background: rgba(25, 22, 20, 0.95);
+            border-color: var(--accent-brass);
+            box-shadow: 0 12px 30px -12px rgba(212, 163, 89, 0.22);
+        }
+
+        .cinematic-textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.65;
+        }
+
+        /* Быстрый выбор жанра — строгие минималистичные теги */
+        .genre-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: -0.9rem;
+        }
+
+        .genre-tag {
+            background: transparent;
+            border: 1px solid var(--line-subtle);
+            border-radius: 2px;
+            color: var(--ink-soft);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            padding: 0.36rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.22s ease;
+        }
+
+        .genre-tag:hover {
+            color: var(--ink-cream);
+            border-color: var(--accent-brass);
+            background: var(--accent-brass-dim);
+        }
+
+        /* ==========================================================================
+           КАСТОМНЫЕ DRAG-AND-DROP ЗОНЫ ДЛЯ ПОСТЕРА И ВИДЕО
+           ========================================================================== */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .dropzone {
+            position: relative;
+            min-height: 132px;
+            padding: 1.25rem;
+            background: linear-gradient(180deg, rgba(22, 19, 17, 0.75) 0%, rgba(13, 12, 11, 0.9) 100%);
+            border: 1px dashed var(--line-medium);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-cinema);
+            overflow: hidden;
+        }
+
+        /* Угловые видоискатели кинокамеры на дропзонах */
+        .dropzone::before,
+        .dropzone::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: var(--accent-brass);
+            border-style: solid;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s var(--ease-cinema);
+            pointer-events: none;
+        }
+
+        .dropzone::before {
+            top: 8px;
+            left: 8px;
+            border-width: 1px 0 0 1px;
+            transform: translate(-3px, -3px);
+        }
+
+        .dropzone::after {
+            bottom: 8px;
+            right: 8px;
+            border-width: 0 1px 1px 0;
+            transform: translate(3px, 3px);
+        }
+
+        .dropzone:hover,
+        .dropzone.is-dragover {
+            border-style: solid;
+            border-color: var(--accent-brass);
+            background: rgba(28, 24, 20, 0.92);
+            transform: translateY(-2px);
+        }
+
+        .dropzone:hover::before,
+        .dropzone:hover::after,
+        .dropzone.is-dragover::before,
+        .dropzone.is-dragover::after {
+            opacity: 1;
+            transform: translate(0, 0);
+        }
+
+        .dropzone.has-file {
+            border-style: solid;
+            border-color: rgba(78, 168, 116, 0.55);
+            background: linear-gradient(180deg, rgba(20, 32, 25, 0.55) 0%, rgba(13, 16, 14, 0.9) 100%);
+        }
+
+        .dropzone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 3;
+        }
+
+        .drop-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            color: var(--ink-dim);
+        }
+
+        .drop-icon {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--line-medium);
+            border-radius: 3px;
+            display: grid;
+            place-items: center;
+            color: var(--accent-brass);
+            font-size: 0.85rem;
+        }
+
+        .drop-bottom {
+            margin-top: 1.1rem;
+        }
+
+        .drop-name {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--ink-cream);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .drop-sub {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--ink-soft);
+        }
+
+        .dropzone.has-file .drop-sub {
+            color: var(--accent-ok);
+        }
+
+        /* ==========================================================================
+           КНОПКА ОТПРАВКИ (ТАКТИЛЬНАЯ, КАК КНОПКА ЗАТВОРА / КИНОПУЛЬТА)
+           ========================================================================== */
+        .submit-row {
+            margin-top: 0.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--line-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .submit-note {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--ink-dim);
+            line-height: 1.5;
+        }
+
+        .btn-submit {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            padding: 1.05rem 2.4rem;
+            background: var(--ink-cream);
+            color: #0a0908;
+            border: 1px solid var(--ink-cream);
+            border-radius: 3px;
+            font-family: var(--font-sans);
+            font-size: 0.96rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition:
+                transform 0.35s var(--ease-cinema),
+                background 0.3s ease,
+                color 0.3s ease,
+                box-shadow 0.35s ease;
+        }
+
+        .btn-submit::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 20%, rgba(212, 163, 89, 0.45) 50%, transparent 80%);
+            transform: translateX(-130%);
+            transition: transform 0.7s var(--ease-cinema);
+        }
+
+        .btn-submit:hover {
+            background: var(--accent-brass);
+            border-color: var(--accent-brass);
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px -10px rgba(212, 163, 89, 0.4);
+        }
+
+        .btn-submit:hover::before {
+            transform: translateX(130%);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0) scale(0.985);
+        }
+
+        /* ==========================================================================
+           ПРАВАЯ КОЛОНКА: ИНТЕРАКТИВНЫЙ МАКЕТ КИНОАФИШИ (35MM FRAME)
+           ========================================================================== */
+        .preview-column {
+            position: sticky;
+            top: 2.5rem;
+            perspective: 1200px;
+        }
+
+        .preview-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-dim);
+            margin-bottom: 1rem;
+        }
+
+        .poster-frame {
+            position: relative;
+            background: var(--bg-surface);
+            border: 1px solid var(--line-medium);
+            border-radius: 6px;
+            padding: 0.85rem;
+            box-shadow:
+                0 40px 90px -20px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(240, 235, 225, 0.12);
+            transform-style: preserve-3d;
+            transition: transform 0.25s ease-out, border-color 0.3s ease;
+            overflow: hidden;
+        }
+
+        /* Стеклянный блик, следующий за мышкой по постеру */
+        .poster-glare {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(
+                circle 260px at var(--gx, 50%) var(--gy, 50%),
+                rgba(240, 235, 225, 0.14),
+                transparent 70%
+            );
+            transition: opacity 0.3s ease;
+        }
+
+        .poster-frame:hover .poster-glare {
+            opacity: 1;
+        }
+
+        .poster-frame:hover {
+            border-color: var(--line-strong);
+        }
+
+        .poster-screen {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            background: #0d0c0b;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poster-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            animation: fadeIn 0.45s ease;
+        }
+
+        /* Эстетичная заглушка с видоискателем кинокамеры */
+        .poster-empty {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            padding: 2rem;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 40%, rgba(212, 163, 89, 0.08), transparent 65%),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.015) 0px,
+                    rgba(255, 255, 255, 0.015) 1px,
+                    transparent 1px,
+                    transparent 4px
+                );
+        }
+
+        .viewfinder-cross {
+            width: 44px;
+            height: 44px;
+            position: relative;
+            opacity: 0.45;
+        }
+
+        .viewfinder-cross::before,
+        .viewfinder-cross::after {
+            content: "";
+            position: absolute;
+            background: var(--accent-brass);
+        }
+        .viewfinder-cross::before { top: 50%; left: 0; right: 0; height: 1px; }
+        .viewfinder-cross::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+
+        .poster-empty span {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--ink-dim);
+        }
+
+        /* Плашка-статус видео прямо на постере */
+        .video-chip {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 4;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            color: var(--ink-cream);
+            background: rgba(10, 9, 8, 0.82);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(78, 168, 116, 0.5);
+            padding: 0.35rem 0.7rem;
+            border-radius: 3px;
+            display: none;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .video-chip.visible {
+            display: inline-flex;
+        }
+
+        .video-chip i {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-ok);
+            display: inline-block;
+        }
+
+        /* Подпись-титр под постером */
+        .poster-footer {
+            padding: 1.25rem 0.35rem 0.45rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .poster-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+        }
+
+        .preview-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 500;
+            line-height: 1.1;
+            color: var(--ink-cream);
+            word-break: break-word;
+        }
+
+        .preview-year {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--accent-brass);
+            flex-shrink: 0;
+        }
+
+        .preview-genre {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+
+        .preview-desc {
+            margin-top: 0.35rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--line-subtle);
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: var(--ink-soft);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .preview-desc:empty {
+            display: none;
+        }
+
+        @keyframes recBlink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.35; transform: scale(0.85); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(1.03); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 960px) {
+            .stage {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            .preview-column {
+                position: static;
+                max-width: 380px;
+                margin: 0 auto;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .slate-bar, .stage {
+                width: min(100% - 2rem, 1280px);
+            }
+            .slate-meta {
+                display: none;
+            }
+            .form-grid-2,
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            .btn-submit {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="slate-bar">
+        <a href="/" class="back-link">← Вернуться на главную</a>
+        <div class="slate-meta">
+            <span>35MM ARCHIVE INTAKE</span>
+            <span>ASPECT 2:3</span>
+            <span class="rec-indicator"><span class="rec-dot"></span> READY</span>
+        </div>
+    </header>
+
+    <main class="stage">
+        <!-- ЛЕВАЯ ЧАСТЬ: ФОРМА ДОБАВЛЕНИЯ -->
+        <section>
+            <div class="headline-block">
+                <span class="headline-kicker">Каталог кинозала · Новая запись</span>
+                <h1>Добавить <em>новый фильм</em></h1>
+            </div>
+
+            <!-- ВАЖНО: enctype="multipart/form-data" нужен для загрузки файлов! -->
+            <form method="post" action="/add" enctype="multipart/form-data" class="intake-form" id="movie-form">
+
+                <div class="field">
+                    <div class="field-head">
+                        <label for="f-title">Название фильма</label>
+                        <span class="field-num">01 / REQUIRED</span>
+                    </div>
+                    <input
+                        type="text"
+                        id="f-title"
+                        name="title"
+                        class="cinematic-input"
+                        placeholder="Например: Бегущий по лезвию 2049"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="field">
+                        <div class="field-head">
+                            <label for="f-year">Год выхода</label>
+                            <span class="field-num">02</span>
+                        </div>
+                        <input
+                            type="number"
+                            id="f-year"
+                            name="year"
+                            class="cinematic-input"
+                            placeholder="2024"
+                            min="1888"
+                            max="2035"
+                            required
+                        >
+                    </div>
+
+                    <div class="field">
+                        <div class="field-head">
+                            <label for="f-genre">Жанр</label>
+                            <span class="field-num">03</span>
+                        </div>
+                        <input
+                            type="text"
+                            id="f-genre"
+                            name="genre"
+                            class="cinematic-input"
+                            placeholder="Боевик, Фантастика"
+                            autocomplete="off"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="genre-strip">
+                    <button type="button" class="genre-tag" data-g="Фантастика">Фантастика</button>
+                    <button type="button" class="genre-tag" data-g="Триллер">Триллер</button>
+                    <button type="button" class="genre-tag" data-g="Драма">Драма</button>
+                    <button type="button" class="genre-tag" data-g="Боевик">Боевик</button>
+                    <button type="button" class="genre-tag" data-g="Неонуар">Неонуар</button>
+                    <button type="button" class="genre-tag" data-g="Комедия">Комедия</button>
+                </div>
+
+                <div class="upload-grid">
+                    <!-- Зона загрузки постера -->
+                    <div class="field">
+                        <div class="field-head">
+                            <label for="f-poster">Постер (картинка)</label>
+                            <span class="field-num">04</span>
+                        </div>
+                        <div class="dropzone" id="poster-zone">
+                            <input type="file" id="f-poster" name="poster" accept="image/*">
+                            <div class="drop-top">
+                                <span>IMAGE / 2:3</span>
+                                <span class="drop-icon">◫</span>
+                            </div>
+                            <div class="drop-bottom">
+                                <div class="drop-name" id="poster-name">Выберите или перетащите</div>
+                                <div class="drop-sub" id="poster-sub">JPG, PNG, WEBP</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Зона загрузки видео -->
+                    <div class="field">
+                        <div class="field-head">
+                            <label for="f-video">Видео (mp4)</label>
+                            <span class="field-num">05</span>
+                        </div>
+                        <div class="dropzone" id="video-zone">
+                            <input type="file" id="f-video" name="video" accept="video/*">
+                            <div class="drop-top">
+                                <span>REEL / STREAM</span>
+                                <span class="drop-icon">▶</span>
+                            </div>
+                            <div class="drop-bottom">
+                                <div class="drop-name" id="video-name">Выберите видеофайл</div>
+                                <div class="drop-sub" id="video-sub">MP4, MKV, WEBM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-head">
+                        <label for="f-desc">Описание фильма</label>
+                        <span class="field-num">06 / SYNOPSIS</span>
+                    </div>
+                    <textarea
+                        id="f-desc"
+                        name="description"
+                        class="cinematic-textarea"
+                        placeholder="Коротко о сюжете, атмосфере и режиссёре..."
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <div class="submit-row">
+                    <div class="submit-note">
+                        POST /add · multipart/form-data<br>
+                        Файлы и метаданные сохраняются в локальный архив
+                    </div>
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <span>Сохранить фильм</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ПРАВАЯ ЧАСТЬ: ЖИВОЙ ПРЕДПРОСМОТР КАРТОЧКИ ФИЛЬМА -->
+        <aside class="preview-column">
+            <div class="preview-label">
+                <span>LIVE SCREENING CARD</span>
+                <span id="preview-status">DRAFT</span>
+            </div>
+
+            <div class="poster-frame" id="poster-card">
+                <div class="poster-glare"></div>
+
+                <div class="poster-screen">
+                    <img id="preview-img" alt="Предпросмотр постера">
+                    <div class="poster-empty" id="preview-empty">
+                        <div class="viewfinder-cross"></div>
+                        <span>Ожидание постера</span>
+                    </div>
+                    <div class="video-chip" id="video-chip">
+                        <i></i>
+                        <span id="video-chip-text">VIDEO ATTACHED</span>
+                    </div>
+                </div>
+
+                <div class="poster-footer">
+                    <div class="poster-title-row">
+                        <div class="preview-title" id="p-title">Без названия</div>
+                        <div class="preview-year" id="p-year">2026</div>
+                    </div>
+                    <div class="preview-genre" id="p-genre">ЖАНР НЕ УКАЗАН</div>
+                    <div class="preview-desc" id="p-desc"></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+      (() => {
+        // 1. Живое обновление карточки-афиши
+        const titleIn  = document.getElementById('f-title');
+        const yearIn   = document.getElementById('f-year');
+        const genreIn  = document.getElementById('f-genre');
+        const descIn   = document.getElementById('f-desc');
+        const posterIn = document.getElementById('f-poster');
+        const videoIn  = document.getElementById('f-video');
+
+        const pTitle  = document.getElementById('p-title');
+        const pYear   = document.getElementById('p-year');
+        const pGenre  = document.getElementById('p-genre');
+        const pDesc   = document.getElementById('p-desc');
+        const pStatus = document.getElementById('preview-status');
+
+        const prevImg   = document.getElementById('preview-img');
+        const prevEmpty = document.getElementById('preview-empty');
+
+        const posterZone = document.getElementById('poster-zone');
+        const posterName = document.getElementById('poster-name');
+        const posterSub  = document.getElementById('poster-sub');
+
+        const videoZone     = document.getElementById('video-zone');
+        const videoName     = document.getElementById('video-name');
+        const videoSub      = document.getElementById('video-sub');
+        const videoChip     = document.getElementById('video-chip');
+        const videoChipText = document.getElementById('video-chip-text');
+
+        let posterObjUrl = null;
+
+        function formatBytes(bytes) {
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+          if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+          return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} ГБ`;
+        }
+
+        function formatDuration(sec) {
+          const h = Math.floor(sec / 3600);
+          const m = Math.floor((sec % 3600) / 60);
+          const s = Math.floor(sec % 60);
+          const pad = (n) => String(n).padStart(2, '0');
+          return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+        }
+
+        function syncMeta() {
+          pTitle.textContent = titleIn.value.trim() || 'Без названия';
+          pYear.textContent  = yearIn.value.trim() || '2026';
+          pGenre.textContent = genreIn.value.trim() || 'ЖАНР НЕ УКАЗАН';
+          pDesc.textContent  = descIn.value.trim();
+
+          const ready = titleIn.value.trim() && yearIn.value.trim() && genreIn.value.trim();
+          pStatus.textContent = ready ? '● READY TO ARCHIVE' : 'DRAFT';
+          pStatus.style.color = ready ? 'var(--accent-ok)' : '';
+        }
+
+        [titleIn, yearIn, genreIn, descIn].forEach((el) => el.addEventListener('input', syncMeta));
+
+        // Быстрые теги жанров
+        document.querySelectorAll('.genre-tag').forEach((tag) => {
+          tag.addEventListener('click', () => {
+            const val = tag.dataset.g;
+            const current = genreIn.value.trim();
+            if (!current) {
+              genreIn.value = val;
+            } else if (!current.toLowerCase().includes(val.toLowerCase())) {
+              genreIn.value = `${current}, ${val}`;
+            }
+            syncMeta();
+          });
+        });
+
+        // Обработка выбора постера
+        posterIn.addEventListener('change', () => {
+          if (posterObjUrl) URL.revokeObjectURL(posterObjUrl);
+          const file = posterIn.files[0];
+          if (file) {
+            posterObjUrl = URL.createObjectURL(file);
+            prevImg.src = posterObjUrl;
+            prevImg.style.display = 'block';
+            prevEmpty.style.display = 'none';
+            posterZone.classList.add('has-file');
+            posterName.textContent = file.name;
+            posterSub.textContent = `✓ ${formatBytes(file.size)}`;
+          } else {
+            prevImg.style.display = 'none';
+            prevEmpty.style.display = 'flex';
+            posterZone.classList.remove('has-file');
+            posterName.textContent = 'Выберите или перетащите';
+            posterSub.textContent = 'JPG, PNG, WEBP';
+          }
+        });
+
+        // Обработка выбора видео + чтение реального разрешения и хронометража
+        videoIn.addEventListener('change', () => {
+          const file = videoIn.files[0];
+          if (!file) {
+            videoZone.classList.remove('has-file');
+            videoName.textContent = 'Выберите видеофайл';
+            videoSub.textContent = 'MP4, MKV, WEBM';
+            videoChip.classList.remove('visible');
+            return;
+          }
+
+          videoZone.classList.add('has-file');
+          videoName.textContent = file.name;
+          videoSub.textContent = `✓ ${formatBytes(file.size)}`;
+          videoChipText.textContent = formatBytes(file.size);
+          videoChip.classList.add('visible');
+
+          // Считываем длительность и разрешение видео локально
+          const probe = document.createElement('video');
+          probe.preload = 'metadata';
+          const tempUrl = URL.createObjectURL(file);
+          probe.src = tempUrl;
+          probe.onloadedmetadata = () => {
+            const res = probe.videoHeight ? `${probe.videoHeight}p` : 'HD';
+            const dur = isFinite(probe.duration) ? formatDuration(probe.duration) : '';
+            const details = [res, dur].filter(Boolean).join(' · ');
+            if (details) {
+              videoSub.textContent = `✓ ${formatBytes(file.size)} · ${details}`;
+              videoChipText.textContent = details;
+            }
+            URL.revokeObjectURL(tempUrl);
+          };
+          probe.onerror = () => URL.revokeObjectURL(tempUrl);
+        });
+
+        // Подсветка при перетаскивании файлов мышью
+        [posterZone, videoZone].forEach((zone) => {
+          ['dragenter', 'dragover'].forEach((ev) =>
+            zone.addEventListener(ev, () => zone.classList.add('is-dragover'))
+          );
+          ['dragleave', 'drop'].forEach((ev) =>
+            zone.addEventListener(ev, () => zone.classList.remove('is-dragover'))
+          );
+        });
+
+        // Индикация загрузки при отправке большого видеофайла
+        document.getElementById('movie-form').addEventListener('submit', () => {
+          const btn = document.getElementById('submit-btn');
+          btn.innerHTML = '<span>Сохранение в архив...</span>';
+          btn.style.opacity = '0.8';
+          btn.style.pointerEvents = 'none';
+        });
+
+        // 2. Оптический блик и мягкий 3D-наклон карточки афиши
+        const card = document.getElementById('poster-card');
+        card.addEventListener('mousemove', (e) => {
+          const r = card.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          card.style.setProperty('--gx', `${px * 100}%`);
+          card.style.setProperty('--gy', `${py * 100}%`);
+          card.style.transform = `rotateY(${(px - 0.5) * 9}deg) rotateX(${-(py - 0.5) * 9}deg)`;
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.transform = 'rotateY(0deg) rotateX(0deg)';
+        });
+
+        // 3. Атмосферный фон тёмной комнаты: анаморфная световая полоса и киноплёночная пыль
+        const canvas = document.createElement('canvas');
+        canvas.id = 'darkroom-canvas';
+        document.body.prepend(canvas);
+        const ctx = canvas.getContext('2d');
+
+        let w, h, dpr, t = 0;
+        const mouse = { x: innerWidth * 0.65, y: innerHeight * 0.35, tx: innerWidth * 0.65, ty: innerHeight * 0.35 };
+        window.addEventListener('mousemove', (e) => { mouse.tx = e.clientX; mouse.ty = e.clientY; });
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          w = innerWidth;
+          h = innerHeight;
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+          ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const motes = Array.from({ length: 55 }, () => {
+          const depth = Math.random() * 0.8 + 0.2;
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.25 * depth,
+            vy: -0.08 - Math.random() * 0.22 * depth,
+            r: (Math.random() * 1.9 + 0.4) * depth,
+            alpha: Math.random() * 0.38 + 0.08,
+            phase: Math.random() * Math.PI * 2,
+            warm: Math.random() > 0.28
+          };
+        });
+
+        function render() {
+          t += 0.01;
+          ctx.clearRect(0, 0, w, h);
+
+          mouse.x += (mouse.tx - mouse.x) * 0.045;
+          mouse.y += (mouse.ty - mouse.y) * 0.045;
+
+          // Тёплое дыхание лампы проектора в правом верхнем углу
+          const lampX = w * 0.78 + Math.sin(t * 0.7) * 55;
+          const lampY = h * 0.22 + Math.cos(t * 0.5) * 35;
+          const lamp = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, Math.max(w, h) * 0.62);
+          lamp.addColorStop(0, 'rgba(212, 163, 89, 0.12)');
+          lamp.addColorStop(0.45, 'rgba(217, 56, 41, 0.045)');
+          lamp.addColorStop(1, 'rgba(10, 9, 8, 0)');
+          ctx.fillStyle = lamp;
+          ctx.fillRect(0, 0, w, h);
+
+          // Тонкий горизонтальный анаморфный блик, реагирующий на высоту курсора
+          const flareY = mouse.y;
+          const flare = ctx.createLinearGradient(0, flareY - 80, 0, flareY + 80);
+          flare.addColorStop(0, 'rgba(212, 163, 89, 0)');
+          flare.addColorStop(0.5, 'rgba(212, 163, 89, 0.038)');
+          flare.addColorStop(1, 'rgba(212, 163, 89, 0)');
+          ctx.fillStyle = flare;
+          ctx.fillRect(0, flareY - 80, w, 160);
+
+          // Медленные пылинки в свете
+          for (let i = 0; i < motes.length; i++) {
+            const m = motes[i];
+            m.phase += 0.018;
+            m.x += m.vx + Math.sin(m.phase) * 0.12;
+            m.y += m.vy;
+
+            if (m.x < -10) m.x = w + 10;
+            if (m.x > w + 10) m.x = -10;
+            if (m.y < -10) m.y = h + 10;
+            if (m.y > h + 10) m.y = -10;
+
+            const a = m.alpha * (0.65 + Math.sin(m.phase * 1.4) * 0.35);
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+            ctx.fillStyle = m.warm
+              ? `rgba(212, 163, 89, ${a})`
+              : `rgba(240, 235, 225, ${a * 0.7})`;
+            ctx.fill();
+          }
+
+          requestAnimationFrame(render);
+        }
+        render();
+      })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 FastKino — Онлайн кинотеатр</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}?v=11">
+</head>
+<body>
+
+    <!-- 1. ВЕРХНЯЯ ЧЁРНАЯ ПАНЕЛЬ -->
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a href="/" class="brand-logo">
+                Fast<span class="accent-word">Kino</span>
+            </a>
+
+            <div class="topbar-right">
+                <nav class="auth-links">
+                    {% if is_admin %}
+                        <a href="/add" class="link-add">+ Добавить фильм</a>
+                        <span class="sep">/</span>
+                        <a href="/logout">Выйти</a>
+                    {% else %}
+                        <a href="/login">Вход как админ</a>
+                    {% endif %}
+                </nav>
+
+                <div class="search-box">
+                    <input type="text" id="live-search" placeholder="Поиск фильма..." autocomplete="off">
+                    <button type="button" id="search-btn">OK</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. АТМОСФЕРНЫЙ БЭКДРОП-БАННЕР -->
+    <div class="hero-backdrop" aria-hidden="true">
+        {% if movies and movies[0].poster_path %}
+            <img src="{{ movies[0].poster_path }}" alt="" class="hero-backdrop-img">
+        {% endif %}
+    </div>
+
+    <!-- 3. ГЛАВНАЯ ОБОЛОЧКА ПОРТАЛА -->
+    <div class="portal-shell">
+
+        <!-- Сегментированное меню вкладок -->
+        <nav class="portal-tabs" id="top-tabs">
+            <button type="button" class="tab-btn active" data-tab="all">Главная</button>
+            <button type="button" class="tab-btn" data-tab="new">Новинки</button>
+            <button type="button" class="tab-btn" data-tab="action">Боевики</button>
+            <button type="button" class="tab-btn" data-tab="scifi">Фантастика</button>
+            <button type="button" class="tab-btn" data-tab="drama">Драмы</button>
+            <button type="button" class="tab-btn" data-tab="thriller">Триллеры</button>
+            <button type="button" class="tab-btn" data-tab="comedy">Комедии</button>
+        </nav>
+
+        <!-- Горизонтальная карусель постеров -->
+        {% if movies %}
+        <section class="carousel-section" aria-label="Новые поступления">
+            <button type="button" class="carousel-arrow prev" id="car-prev" aria-label="Назад">‹</button>
+            <div class="carousel-track" id="carousel-track">
+                {% for m in movies %}
+                    <a href="/movie/{{ m.id }}" class="carousel-poster">
+                        {% if m.poster_path %}
+                            <img src="{{ m.poster_path }}" alt="{{ m.title }}">
+                        {% else %}
+                            <div class="carousel-poster-fallback">{{ m.title }}</div>
+                        {% endif %}
+                        <div class="carousel-poster-overlay">
+                            <span class="carousel-poster-title">{{ m.title }}</span>
+                            <span class="carousel-poster-year">{{ m.year }}</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+            <button type="button" class="carousel-arrow next" id="car-next" aria-label="Вперёд">›</button>
+        </section>
+        {% endif %}
+
+        <!-- Промо-плашка Telegram -->
+        <div class="promo-strip">
+            <div class="promo-text">Будь в курсе актуальных новинок любимого кинозала ❤️</div>
+            <a href="https://t.me/Ilwartndr" target="_blank" class="promo-btn">
+                <span class="tg-circle">✈</span>
+                Подписаться на @Ilwartndr
+            </a>
+        </div>
+
+        <!-- Основная двухколоночная сетка -->
+        <div class="portal-body">
+
+            <!-- ЛЕВАЯ ПАНЕЛЬ НАВИГАЦИИ -->
+            <aside class="sidebar">
+                <div class="sidebar-heading">Панель навигации</div>
+
+                <div>
+                    <div class="sidebar-block-title">Жанры</div>
+                    <ul class="nav-list" id="genre-nav">
+                        <li>
+                            <button type="button" class="nav-filter-btn active" data-genre="all">
+                                <span>— Все фильмы</span>
+                                <span class="count" id="count-all">{{ movies|length }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="sidebar-block-title">По году</div>
+                    <ul class="nav-list" id="year-nav"></ul>
+                </div>
+            </aside>
+
+            <!-- ПРАВАЯ ОБЛАСТЬ: СОРТИРОВКА И ЛЕНТА ФИЛЬМОВ -->
+            <main class="content-area">
+                <div class="filter-bar">
+                    <div class="sort-controls">
+                        <label for="sort-select">Сортировка:</label>
+                        <select id="sort-select" class="sort-select">
+                            <option value="default">По дате добавления</option>
+                            <option value="year-desc">Сначала новые (по году)</option>
+                            <option value="year-asc">Сначала старые (по году)</option>
+                            <option value="title-asc">По алфавиту (А–Я)</option>
+                        </select>
+                    </div>
+                    <div class="shown-counter">
+                        Показано: <strong id="shown-count">{{ movies|length }}</strong>
+                    </div>
+                </div>
+
+                {% if movies %}
+                    <div class="movie-feed" id="movie-feed">
+                        {% for m in movies %}
+                            <article
+                                id="movie-{{ m.id }}"
+                                class="movie-entry"
+                                data-title="{{ m.title | lower }}"
+                                data-genre="{{ m.genre | lower }}"
+                                data-year="{{ m.year }}"
+                                data-order="{{ loop.index0 }}"
+                            >
+                                <div class="entry-header">
+                                    <h2 class="entry-title">
+                                        <a href="/movie/{{ m.id }}">{{ m.title }} ({{ m.year }})</a>
+                                    </h2>
+                                    <div class="entry-ratings">
+                                        <span class="stars" title="Рейтинг зрителей">★★★★★</span>
+                                        <span class="rating-badge badge-kp">HD</span>
+                                        <span class="rating-badge badge-hd">1080p</span>
+                                    </div>
+                                </div>
+
+                                <div class="entry-body">
+                                    <div class="entry-poster">
+                                        <!-- Постер и кнопка Play обёрнуты в ссылку на страницу фильма -->
+                                        <a href="/movie/{{ m.id }}" style="display: block; width: 100%; height: 100%; position: relative; text-decoration: none;">
+                                            {% if m.poster_path %}
+                                                <img src="{{ m.poster_path }}" alt="{{ m.title }}">
+                                            {% else %}
+                                                <div class="entry-poster-empty">Нет постера</div>
+                                            {% endif %}
+                                            <div class="poster-play-hint"><span>▶</span></div>
+                                        </a>
+                                    </div>
+
+                                    <div class="entry-info">
+                                        <div class="meta-line">
+                                            <strong>Год выпуска:</strong>
+                                            <span class="meta-highlight">{{ m.year }}</span>
+                                        </div>
+                                        <div class="meta-line">
+                                            <strong>Жанр:</strong>
+                                            <span class="meta-highlight">{{ m.genre }}</span>
+                                        </div>
+                                        <div class="meta-line">
+                                            <strong>Качество:</strong>
+                                            <span>WEB-DL 1080p · Русская озвучка</span>
+                                        </div>
+
+                                        {% if m.description %}
+                                            <div class="entry-desc">{{ m.description }}</div>
+                                        {% else %}
+                                            <div class="entry-desc" style="color: var(--ink-muted); font-style: italic;">
+                                                Описание фильма пока не добавлено.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+
+                    <div class="empty" id="no-results" style="display: none;">
+                        <h2>Ничего не найдено</h2>
+                        <p>По выбранному фильтру фильмов нет. Попробуйте сбросить поиск или выбрать «Все фильмы».</p>
+                    </div>
+                {% else %}
+                    <div class="empty">
+                        <h2>Пока нет фильмов</h2>
+                        <p>Нажми «Добавить фильм», чтобы создать свою коллекцию.</p>
+                        {% if is_admin %}
+                            <a href="/add" class="btn" style="margin-top: 1.25rem;">+ Добавить первый фильм</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </main>
+
+        </div>
+    </div>
+
+    <!-- СКРИПТ: Карусель, живой поиск, динамическая панель жанров/годов и сортировка -->
+    <script>
+      (() => {
+        const track = document.getElementById('carousel-track');
+        const prevBtn = document.getElementById('car-prev');
+        const nextBtn = document.getElementById('car-next');
+
+        if (track && prevBtn && nextBtn) {
+          prevBtn.addEventListener('click', () => track.scrollBy({ left: -340, behavior: 'smooth' }));
+          nextBtn.addEventListener('click', () => track.scrollBy({ left: 340, behavior: 'smooth' }));
+        }
+
+        const feed = document.getElementById('movie-feed');
+        if (!feed) return;
+
+        const cards = Array.from(feed.querySelectorAll('.movie-entry'));
+        const searchInput = document.getElementById('live-search');
+        const searchBtn = document.getElementById('search-btn');
+        const sortSelect = document.getElementById('sort-select');
+        const shownCount = document.getElementById('shown-count');
+        const noResults = document.getElementById('no-results');
+        const genreNav = document.getElementById('genre-nav');
+        const yearNav = document.getElementById('year-nav');
+
+        let activeGenre = 'all';
+        let activeYear = 'all';
+
+        const genreMap = new Map();
+        const yearMap = new Map();
+
+        cards.forEach((card) => {
+          const rawGenres = card.dataset.genre.split(/[,•/]+/).map(s => s.trim()).filter(Boolean);
+          rawGenres.forEach(g => genreMap.set(g, (genreMap.get(g) || 0) + 1));
+
+          const y = card.dataset.year;
+          if (y) yearMap.set(y, (yearMap.get(y) || 0) + 1);
+        });
+
+        Array.from(genreMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([genre, count]) => {
+            const label = genre.charAt(0).toUpperCase() + genre.slice(1);
+            const li = document.createElement('li');
+            li.innerHTML = `<button type="button" class="nav-filter-btn" data-genre="${genre}">
+              <span>${label}</span><span class="count">${count}</span>
+            </button>`;
+            genreNav.appendChild(li);
+          });
+
+        Array.from(yearMap.entries())
+          .sort((a, b) => Number(b[0]) - Number(a[0]))
+          .forEach(([year, count]) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<button type="button" class="nav-filter-btn year-btn" data-year="${year}">
+              <span>${year} года</span><span class="count">${count}</span>
+            </button>`;
+            yearNav.appendChild(li);
+          });
+
+        function applyFilters() {
+          const query = searchInput.value.trim().toLowerCase();
+          let visibleCount = 0;
+
+          cards.forEach((card) => {
+            const matchesSearch = !query || card.dataset.title.includes(query) || card.dataset.genre.includes(query);
+            const matchesGenre = activeGenre === 'all' || card.dataset.genre.includes(activeGenre);
+            const matchesYear = activeYear === 'all' || card.dataset.year === activeYear;
+
+            const show = matchesSearch && matchesGenre && matchesYear;
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+          });
+
+          shownCount.textContent = visibleCount;
+          if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        function applySort() {
+          const mode = sortSelect.value;
+          const sorted = [...cards].sort((a, b) => {
+            if (mode === 'year-desc') return Number(b.dataset.year) - Number(a.dataset.year);
+            if (mode === 'year-asc') return Number(a.dataset.year) - Number(b.dataset.year);
+            if (mode === 'title-asc') return a.dataset.title.localeCompare(b.dataset.title, 'ru');
+            return Number(a.dataset.order) - Number(b.dataset.order);
+          });
+          sorted.forEach(el => feed.appendChild(el));
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+        searchBtn.addEventListener('click', applyFilters);
+        sortSelect.addEventListener('change', applySort);
+
+        genreNav.addEventListener('click', (e) => {
+          const btn = e.target.closest('.nav-filter-btn');
+          if (!btn) return;
+          genreNav.querySelectorAll('.nav-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeGenre = btn.dataset.genre;
+          if (activeGenre === 'all') {
+            activeYear = 'all';
+            yearNav.querySelectorAll('.nav-filter-btn').forEach(b => b.classList.remove('active'));
+          }
+          applyFilters();
+        });
+
+        yearNav.addEventListener('click', (e) => {
+          const btn = e.target.closest('.nav-filter-btn');
+          if (!btn) return;
+          const clickedYear = btn.dataset.year;
+          if (activeYear === clickedYear) {
+            activeYear = 'all';
+            btn.classList.remove('active');
+          } else {
+            yearNav.querySelectorAll('.nav-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeYear = clickedYear;
+          }
+          applyFilters();
+        });
+
+        const tabGenreMap = {
+          all: 'all',
+          new: 'all',
+          action: 'боевик',
+          scifi: 'фантастик',
+          drama: 'драм',
+          thriller: 'триллер',
+          comedy: 'комед'
+        };
+
+        document.querySelectorAll('.tab-btn').forEach((tab) => {
+          tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const key = tab.dataset.tab;
+            activeGenre = tabGenreMap[key] || 'all';
+            activeYear = 'all';
+            yearNav.querySelectorAll('.nav-filter-btn').forEach(b => b.classList.remove('active'));
+
+            if (key === 'new') {
+              sortSelect.value = 'year-desc';
+              applySort();
+            }
+            applyFilters();
+          });
+        });
+      })();
+    </script>
+
+</body>
+</html>

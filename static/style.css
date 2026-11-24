@@ -1,0 +1,1012 @@
+/* ==========================================================================
+   KINOGO REIMAGINED — РЕАЛИСТИЧНЫЙ КИНОПОРТАЛ (DARK GRAPHITE & GLASS)
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Реалистичные слои тёмного графита и анодированного металла */
+  --bg-void: #090a0e;
+  --bg-shell: #12141b;
+  --bg-panel: #171a22;
+  --bg-sidebar: #14171f;
+  --bg-card: #1a1e28;
+  --bg-card-hover: #1f2431;
+  --bg-input: #0d0f14;
+
+  /* Текст */
+  --ink-white: #ffffff;
+  --ink-primary: #eef0f6;
+  --ink-secondary: #9ba3b5;
+  --ink-muted: #646c7e;
+
+  /* Кино-акценты */
+  --accent-crimson: #e11d48;
+  --accent-crimson-dark: #9f1239;
+  --accent-amber: #f59e0b;
+  --accent-gold: #fbbf24;
+  --accent-kp: #ff6b00;
+  --accent-imdb: #f5c518;
+  --accent-tg-start: #4a2682;
+  --accent-tg-end: #27174d;
+
+  /* Реалистичные фаски и микро-блики */
+  --border-dark: rgba(0, 0, 0, 0.55);
+  --border-light: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --recessed-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65);
+
+  --font-sans: 'Onest', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+  background-color: var(--bg-void);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Тонкая текстура киноплёнки поверх всей страницы для тактильного реализма */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-void);
+  position: relative;
+  padding-bottom: 4rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent-crimson);
+  color: #fff;
+}
+
+/* ==========================================================================
+   1. ВЕРХНЯЯ ЧЁРНАЯ ПАНЕЛЬ (ЛОГОТИП, ВХОД/АДМИНКА, ПОИСК)
+   ========================================================================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(9, 10, 14, 0.88);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+.topbar-inner {
+  width: min(100% - 2rem, 1180px);
+  margin: 0 auto;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.brand-logo {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-white);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-shadow: 0 2px 14px rgba(225, 29, 72, 0.45);
+}
+
+.brand-logo .accent-word {
+  color: var(--accent-crimson);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  color: var(--ink-secondary);
+}
+
+.auth-links a {
+  transition: color 0.2s ease;
+}
+
+.auth-links a:hover {
+  color: var(--ink-white);
+}
+
+.auth-links .link-add {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.auth-links .sep {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+/* Реалистичная строка поиска в шапке */
+.search-box {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--recessed-shadow);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.search-box:focus-within {
+  border-color: rgba(225, 29, 72, 0.55);
+  box-shadow: var(--recessed-shadow), 0 0 0 3px rgba(225, 29, 72, 0.14);
+}
+
+.search-box input {
+  width: 220px;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.48rem 0.85rem;
+  color: var(--ink-white);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+}
+
+.search-box input::placeholder {
+  color: var(--ink-muted);
+}
+
+.search-box button {
+  background: linear-gradient(180deg, #2b3040 0%, #1d202b 100%);
+  border: none;
+  border-left: 1px solid var(--border-light);
+  color: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.search-box button:hover {
+  background: linear-gradient(180deg, var(--accent-crimson) 0%, var(--accent-crimson-dark) 100%);
+  color: #fff;
+}
+
+/* ==========================================================================
+   2. КИНЕМАТОГРАФИЧНЫЙ ФОН-БЭКДРОП ВВЕРХУ СТРАНИЦЫ
+   ========================================================================== */
+.hero-backdrop {
+  position: relative;
+  height: 245px;
+  width: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 75% 110% at 50% 0%, rgba(225, 29, 72, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 80% at 80% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 20% 20%, rgba(59, 130, 246, 0.16) 0%, transparent 60%),
+    #0c0e14;
+}
+
+.hero-backdrop-img {
+  position: absolute;
+  inset: -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+  object-fit: cover;
+  object-position: center 25%;
+  filter: blur(14px) brightness(0.45) saturate(1.25);
+  transform: scale(1.06);
+}
+
+/* Плавное растворение баннера в тёмный фон портала */
+.hero-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(9, 10, 14, 0.25) 0%, rgba(9, 10, 14, 0.6) 65%, var(--bg-void) 100%),
+    radial-gradient(circle at 50% 35%, transparent 30%, rgba(9, 10, 14, 0.72) 100%);
+}
+
+/* ==========================================================================
+   3. ГЛАВНЫЙ КОНТЕЙНЕР ПОРТАЛА (ПЕРЕКРЫВАЕТ НИЗ БЭКДРОПА)
+   ========================================================================== */
+.portal-shell {
+  position: relative;
+  z-index: 10;
+  width: min(100% - 2rem, 1180px);
+  margin: -115px auto 0;
+  background: var(--bg-shell);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  box-shadow:
+    0 35px 90px rgba(0, 0, 0, 0.85),
+    var(--top-highlight);
+  overflow: hidden;
+}
+
+/* Сегментированная полоса вкладок (ГЛАВНАЯ / НОВИНКИ / ФИЛЬМЫ / ...) */
+.portal-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  background: linear-gradient(180deg, #252936 0%, #171a23 100%);
+  border-bottom: 1px solid var(--border-dark);
+  box-shadow: var(--top-highlight);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.95rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease, background 0.2s ease;
+  text-align: center;
+}
+
+.tab-btn:last-child {
+  border-right: none;
+}
+
+.tab-btn:hover {
+  color: var(--ink-white);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tab-btn.active {
+  color: var(--ink-white);
+  background: linear-gradient(180deg, rgba(225, 29, 72, 0.22) 0%, rgba(225, 29, 72, 0.05) 100%);
+}
+
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-crimson), var(--accent-amber));
+  box-shadow: 0 0 12px var(--accent-crimson);
+}
+
+/* ==========================================================================
+   4. ГОРИЗОНТАЛЬНАЯ КАРУСЕЛЬ ПОСТЕРОВ ПОД МЕНЮ
+   ========================================================================== */
+.carousel-section {
+  position: relative;
+  padding: 1.15rem 1.25rem;
+  background: linear-gradient(180deg, #101218 0%, #141720 100%);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.carousel-track {
+  display: flex;
+  gap: 0.95rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 0.2rem 0.15rem;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-poster {
+  flex: 0 0 154px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: #1c202b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.65);
+  transition: transform 0.35s var(--ease-out), border-color 0.25s ease, box-shadow 0.35s ease;
+  cursor: pointer;
+}
+
+.carousel-poster:hover {
+  transform: translateY(-5px) scale(1.03);
+  border-color: var(--accent-amber);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.8), 0 0 22px -4px rgba(245, 158, 11, 0.35);
+}
+
+.carousel-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carousel-poster-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  background: linear-gradient(145deg, #212533, #13161f);
+}
+
+.carousel-poster-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 2.2rem 0.65rem 0.6rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 10, 14, 0.95) 85%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.carousel-poster-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carousel-poster-year {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-gold);
+}
+
+/* Тактильные стрелки карусели < и > */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  width: 34px;
+  height: 54px;
+  background: rgba(15, 17, 24, 0.82);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-strong);
+  color: var(--ink-white);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  transition: all 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background: var(--accent-crimson);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.carousel-arrow.prev { left: 0.6rem; }
+.carousel-arrow.next { right: 0.6rem; }
+
+/* ==========================================================================
+   5. ПРОМО-ПЛАШКА TELEGRAM (ФИОЛЕТОВАЯ ПОЛОСА)
+   ========================================================================== */
+.promo-strip {
+  margin: 1.15rem 1.25rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 11px;
+  background: linear-gradient(90deg, #1b172c 0%, var(--accent-tg-start) 52%, var(--accent-tg-end) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.24);
+  box-shadow: 0 12px 30px -10px rgba(74, 38, 130, 0.65), var(--top-highlight);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.promo-text {
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #f3effc;
+}
+
+.promo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #ffffff;
+  color: #14121f;
+  font-weight: 600;
+  font-size: 0.86rem;
+  padding: 0.58rem 1.15rem;
+  border-radius: 9px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s ease;
+}
+
+.promo-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.tg-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #27a7e7;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+}
+
+/* ==========================================================================
+   6. ДВУХКОЛОНОЧНОЕ ТЕЛО ПОРТАЛА (ЛЕВЫЙ САЙДБАР + ЛЕНТА ФИЛЬМОВ СПРАВА)
+   ========================================================================== */
+.portal-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  border-top: 1px solid var(--border-light);
+  min-height: 620px;
+}
+
+/* ЛЕВАЯ ПАНЕЛЬ НАВИГАЦИИ (.sidebar) */
+.sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-light);
+  padding: 1.35rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-heading {
+  font-size: 0.96rem;
+  font-weight: 600;
+  color: var(--ink-white);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.01em;
+}
+
+.sidebar-block-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-primary);
+  margin-bottom: 0.65rem;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.nav-filter-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 0.42rem 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.nav-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink-white);
+}
+
+.nav-filter-btn.active {
+  background: rgba(225, 29, 72, 0.14);
+  color: var(--ink-white);
+  font-weight: 600;
+}
+
+.nav-filter-btn .count {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.nav-filter-btn.active .count {
+  color: var(--accent-gold);
+}
+
+.year-btn {
+  color: var(--accent-amber);
+}
+
+.year-btn:hover {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* ПРАВАЯ ОБЛАСТЬ КОНТЕНТА (.content-area) */
+.content-area {
+  background: var(--bg-shell);
+  padding: 1.35rem 1.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Полоса сортировки и фильтров */
+.filter-bar {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: var(--top-highlight);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.86rem;
+  color: var(--ink-secondary);
+}
+
+.sort-select {
+  background: var(--bg-input);
+  color: var(--ink-white);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 0.42rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  border-color: var(--accent-crimson);
+}
+
+.shown-counter {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+.shown-counter strong {
+  color: var(--ink-white);
+}
+
+/* ==========================================================================
+   7. РЕАЛИСТИЧНЫЕ ГОРИЗОНТАЛЬНЫЕ КАРТОЧКИ ФИЛЬМОВ (.movie-entry)
+   ========================================================================== */
+.movie-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.movie-entry {
+  background: linear-gradient(180deg, var(--bg-card) 0%, #151821 100%);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 14px 35px rgba(0, 0, 0, 0.45),
+    var(--top-highlight);
+  transition: transform 0.3s var(--ease-out), border-color 0.25s ease, box-shadow 0.3s ease;
+}
+
+.movie-entry:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.17);
+  box-shadow:
+    0 22px 45px rgba(0, 0, 0, 0.65),
+    0 0 30px -12px rgba(225, 29, 72, 0.25),
+    var(--top-highlight);
+}
+
+/* Верхняя полоса карточки: Название + Звёзды + Бейджи качества */
+.entry-header {
+  padding: 1rem 1.35rem;
+  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.entry-title {
+  font-size: 1.28rem;
+  font-weight: 600;
+  color: var(--ink-white);
+  letter-spacing: -0.015em;
+  transition: color 0.2s ease;
+}
+
+.movie-entry:hover .entry-title {
+  color: var(--accent-gold);
+}
+
+.entry-ratings {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.stars {
+  color: var(--accent-amber);
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.rating-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  border-radius: 5px;
+  color: #111;
+}
+
+.badge-kp {
+  background: linear-gradient(135deg, #ff7b00, #f59e0b);
+}
+
+.badge-hd {
+  background: linear-gradient(135deg, #f5c518, #eab308);
+}
+
+/* Тело карточки: Постер слева + Метаданные справа */
+.entry-body {
+  padding: 1.25rem 1.35rem;
+  display: grid;
+  grid-template-columns: 185px 1fr;
+  gap: 1.45rem;
+  align-items: start;
+}
+
+.entry-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+  background: #101218;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.65);
+}
+
+.entry-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s var(--ease-out);
+}
+
+.movie-entry:hover .entry-poster img {
+  transform: scale(1.05);
+}
+
+.entry-poster-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: radial-gradient(circle at 50% 35%, rgba(225, 29, 72, 0.12), #11131a 75%);
+}
+
+/* Кнопка Play при наведении на постер */
+.poster-play-hint {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 10, 14, 0.45);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.poster-play-hint span {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(225, 29, 72, 0.92);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  padding-left: 3px;
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.6);
+  transform: scale(0.85);
+  transition: transform 0.25s var(--ease-out);
+}
+
+.movie-entry:hover .poster-play-hint {
+  opacity: 1;
+}
+
+.movie-entry:hover .poster-play-hint span {
+  transform: scale(1);
+}
+
+/* Информация о фильме справа */
+.entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.meta-line {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.meta-line strong {
+  color: var(--ink-primary);
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.meta-highlight {
+  color: var(--ink-white);
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.28);
+}
+
+.entry-desc {
+  margin-top: 0.45rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+}
+
+/* ==========================================================================
+   8. ПУСТОЕ СОСТОЯНИЕ (.empty)
+   ========================================================================== */
+.empty {
+  margin: 2.5rem auto;
+  padding: 3.25rem 2rem;
+  max-width: 540px;
+  text-align: center;
+  background: var(--bg-panel);
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+}
+
+.empty h2 {
+  font-size: 1.5rem;
+  color: var(--ink-white);
+  margin-bottom: 0.65rem;
+}
+
+.empty p {
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   9. КНОПКИ И ПОДДЕРЖКА СТРАНИЦ /LOGIN И /ADD В ТОМ ЖЕ ТЁМНОМ СТИЛЕ
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.78rem 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-crimson) 0%, var(--accent-crimson-dark) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -6px rgba(225, 29, 72, 0.5), var(--top-highlight);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -6px rgba(225, 29, 72, 0.72), var(--top-highlight);
+}
+
+.btn-back {
+  background: linear-gradient(180deg, #242836 0%, #191c26 100%);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--top-highlight);
+  color: var(--ink-primary);
+}
+
+.btn-back:hover {
+  background: #2b3042;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Совместимость со старой шапкой .header на страницах /login и /add */
+.header {
+  width: min(100% - 2rem, 1180px);
+  margin: 1.25rem auto 2.25rem;
+  padding: 0.95rem 1.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), var(--top-highlight);
+}
+
+.header h1 {
+  font-size: 1.45rem;
+  color: var(--ink-white);
+}
+
+/* Тёмное переопределение карточек /login и /add */
+body .auth-card,
+body .editor-card {
+  background: linear-gradient(180deg, #1b1f2a 0%, #13161f 100%) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.75), var(--top-highlight) !important;
+}
+
+body .auth-card h2,
+body .editor-title,
+body .field-label,
+body .drop-title {
+  color: var(--ink-white) !important;
+}
+
+body .cinema-input,
+body .cinema-field,
+body .file-dropzone {
+  background: var(--bg-input) !important;
+  color: var(--ink-white) !important;
+  border: 1px solid var(--border-strong) !important;
+  box-shadow: var(--recessed-shadow) !important;
+}
+
+body .g-chip {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--ink-secondary) !important;
+  border-color: var(--border-light) !important;
+}
+
+body .g-chip:hover {
+  color: #fff !important;
+  border-color: var(--accent-amber) !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+}
+
+body .card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+}
+
+body .card img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+body .card-body {
+  padding: 1rem 1.15rem;
+}
+
+body .card-title {
+  color: var(--ink-white);
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+}
+
+body .card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--accent-gold);
+}
+
+/* ==========================================================================
+   10. АДАПТИВНОСТЬ ДЛЯ ПЛАНШЕТОВ И СМАРТФОНОВ
+   ========================================================================== */
+@media (max-width: 920px) {
+  .portal-body {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-inner {
+    padding: 0.65rem 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .topbar-right {
+    justify-content: space-between;
+  }
+  .search-box input {
+    width: 100%;
+  }
+  .entry-body {
+    grid-template-columns: 1fr;
+  }
+  .entry-poster {
+    max-width: 220px;
+  }
+}
