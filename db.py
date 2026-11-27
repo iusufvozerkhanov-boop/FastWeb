@@ -1,8 +1,11 @@
 import os
 import libsql_client
 
-TURSO_URL = os.getenv("libsql://fastkino-iusufvozerkhanov-boop.aws-eu-west-1.turso.io")
+TURSO_URL = os.getenv("https://fastkino-iusufvozerkhanov-boop.aws-eu-west-1.turso.io")
 TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTU4MDIxNzEsImlkIjoiMDFhMjFkZjUtYjIwMS03NDMzLWFmY2MtYTgzNTMyNTEyZDFkIiwia2lkIjoiamMwb3B6c0ZRTFBoMmdOcWhGQnBHLUlhVkJib2hYakZKU216NG9fVl9BSSIsInJpZCI6IjRmYjhjNjMwLTE2NTgtNGVlMS04MDc5LTQxMTViMDgyOTY5ZSJ9.-B2uIHVlQdsdEFVPf37B6i1g5ozW5RFhMUAEQHu161aQmaAWHhfux0tSTtAxcZe3BN2yNORheY7hw_EVWSwUCg")
+
+print(f"DEBUG RENDER: URL = '{TURSO_URL}'")
+print(f"DEBUG RENDER: TOKEN = {'ЕСТЬ' if TURSO_TOKEN else 'НЕТ'}")
 
 def get_client():
     return libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN)
@@ -11,10 +14,8 @@ def to_dict(result):
     """Превращает ответ Turso в список словарей"""
     return [dict(zip(result.columns, row)) for row in result.rows]
 
-# --- ФУНКЦИИ, КОТОРЫЕ ИСПОЛЬЗУЮТ И БОТ, И САЙТ ---
 
 async def init_db():
-    """Создает таблицу, если ее нет"""
     client = get_client()
     try:
         await client.execute("""
