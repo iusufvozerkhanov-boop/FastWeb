@@ -1,9 +1,8 @@
 import os
 import libsql_client
 
-# Данные для подключения к Turso (вставь свои)
-TURSO_URL = "https://fastkino-iusufvozerkhanov-boop.aws-eu-west-1.turso.io"
-TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTU4MDEyNDQsImlkIjoiMDFhMjFkZjUtYjIwMS03NDMzLWFmY2MtYTgzNTMyNTEyZDFkIiwia2lkIjoiamMwb3B6c0ZRTFBoMmdOcWhGQnBHLUlhVkJib2hYakZKU216NG9fVl9BSSIsInJpZCI6IjRmYjhjNjMwLTE2NTgtNGVlMS04MDc5LTQxMTViMDgyOTY5ZSJ9.30rULGv6saJoEINluRouhBDLT_-n8cv7Tq7-8eIn6WyZDXInfgCQB8a90T2FNL-0L_hyCcO1yVH9h-sDusM5CQ"
+TURSO_URL = os.getenv("libsql://fastkino-iusufvozerkhanov-boop.aws-eu-west-1.turso.io")
+TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTU4MDIxNzEsImlkIjoiMDFhMjFkZjUtYjIwMS03NDMzLWFmY2MtYTgzNTMyNTEyZDFkIiwia2lkIjoiamMwb3B6c0ZRTFBoMmdOcWhGQnBHLUlhVkJib2hYakZKU216NG9fVl9BSSIsInJpZCI6IjRmYjhjNjMwLTE2NTgtNGVlMS04MDc5LTQxMTViMDgyOTY5ZSJ9.-B2uIHVlQdsdEFVPf37B6i1g5ozW5RFhMUAEQHu161aQmaAWHhfux0tSTtAxcZe3BN2yNORheY7hw_EVWSwUCg")
 
 def get_client():
     return libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN)
