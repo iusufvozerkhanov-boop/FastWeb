@@ -6,3 +6,4 @@ python-multipart
 python-docx
 qrcode[pil]
 libsql-client
+python-dotenv

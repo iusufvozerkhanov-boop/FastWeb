@@ -1,8 +1,11 @@
 import os
+from dotenv import load_dotenv
 import libsql_client
 
-TURSO_URL = os.getenv("https://fastkino-iusufvozerkhanov-boop.aws-eu-west-1.turso.io")
-TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTU4MDIxNzEsImlkIjoiMDFhMjFkZjUtYjIwMS03NDMzLWFmY2MtYTgzNTMyNTEyZDFkIiwia2lkIjoiamMwb3B6c0ZRTFBoMmdOcWhGQnBHLUlhVkJib2hYakZKU216NG9fVl9BSSIsInJpZCI6IjRmYjhjNjMwLTE2NTgtNGVlMS04MDc5LTQxMTViMDgyOTY5ZSJ9.-B2uIHVlQdsdEFVPf37B6i1g5ozW5RFhMUAEQHu161aQmaAWHhfux0tSTtAxcZe3BN2yNORheY7hw_EVWSwUCg")
+load_dotenv()
+
+TURSO_URL = os.getenv("TURSO_URL")
+TURSO_TOKEN = os.getenv("TURSO_TOKEN")
 
 print(f"DEBUG RENDER: URL = '{TURSO_URL}'")
 print(f"DEBUG RENDER: TOKEN = {'ЕСТЬ' if TURSO_TOKEN else 'НЕТ'}")
