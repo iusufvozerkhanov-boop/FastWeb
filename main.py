@@ -7,7 +7,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
-from db import init_db, get_all_movies, get_movie_by_id, add_movie_full, update_movie, delete_movie
+from db import init_db, get_all_movies, add_movie_full, get_movie_by_id, delete_movie, update_movie
+
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -91,7 +92,7 @@ async def logout():
 @app.get("/movie/{movie_id}", response_class=HTMLResponse)
 async def movie_detail(request: Request, movie_id: int):
     is_admin = request.cookies.get("is_admin") == "true"
-    movie = await get_movie_by_id(movie_id)  # Берем из db.py
+    movie = await get_movie_by_id(movie_id)
     if not movie:
         return HTMLResponse("<h1>Фильм не найден</h1><a href='/'>На главную</a>", status_code=404)
     return templates.TemplateResponse(
